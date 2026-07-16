@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Focus 30</title>
+<meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Focus 30">
+<style>
+  :root{
+    --bg:#0f1115; --card:#1a1d24; --card2:#22262f; --line:#2c313c;
+    --txt:#e8eaf0; --muted:#8a91a0; --accent:#4f8cff; --ok:#3ddc84;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding-bottom:60px}
+  .wrap{max-width:640px; margin:0 auto; padding:0 12px}
+
+  header{position:sticky; top:0; z-index:10; background:rgba(15,17,21,.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    padding-top:env(safe-area-inset-top)}
+  .hrow{display:flex; align-items:center; justify-content:space-between;
+    max-width:640px; margin:0 auto; padding:10px 12px}
+  h1{font-size:18px; margin:0; letter-spacing:.3px}
+  h1 span{color:var(--accent)}
+  .datenav{display:flex; align-items:center; gap:6px}
+  .datenav button{background:var(--card2); color:var(--txt); border:1px solid var(--line);
+    border-radius:10px; padding:6px 11px; font-size:15px; cursor:pointer}
+  .datenav .dlabel{font-size:14px; min-width:96px; text-align:center; color:var(--txt)}
+  .datenav .today{font-size:12px; color:var(--accent); background:none; border:none; padding:4px}
+
+  h2{font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
+    margin:22px 4px 8px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px}
+
+  /* recap */
+  .bigbar{height:10px; background:var(--card2); border-radius:6px; overflow:hidden; margin:8px 0 4px}
+  .bigbar div{height:100%; background:linear-gradient(90deg,var(--accent),#7db2ff); border-radius:6px;
+    transition:width .3s}
+  .barlabel{font-size:13px; color:var(--muted)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .chip{font-size:12px; padding:4px 10px; border-radius:20px; background:var(--card2);
+    border:1px solid var(--line)}
+  .ritem{display:flex; gap:8px; padding:7px 0; border-top:1px solid var(--line);
+    font-size:14px; align-items:baseline}
+  .ritem:first-of-type{border-top:none}
+  .rtime{color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; font-size:12.5px}
+  .rlist{margin-top:12px}
+  .empty{color:var(--muted); font-size:14px; text-align:center; padding:8px 0}
+
+  /* goals */
+  .goal{padding:12px 0; border-top:1px solid var(--line)}
+  .goal:first-child{border-top:none; padding-top:0}
+  .goal:last-child{padding-bottom:0}
+  .gtop{display:flex; justify-content:space-between; align-items:center; gap:8px}
+  .gtitle{font-size:15px; font-weight:600}
+  .gdel{background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:2px 6px}
+  .gmeta{font-size:12px; color:var(--muted); margin-top:2px}
+  .gbar{height:8px; background:var(--card2); border-radius:5px; overflow:hidden; margin:8px 0 6px}
+  .gbar div{height:100%; background:var(--ok); border-radius:5px; transition:width .2s}
+  .goal input[type=range]{width:100%; accent-color:var(--ok); margin:0}
+  .gpct{font-size:12px; color:var(--ok); font-weight:600}
+
+  .addgoal{display:flex; flex-direction:column; gap:8px; margin-top:12px; padding-top:12px;
+    border-top:1px dashed var(--line)}
+  .addgoal .row{display:flex; gap:8px}
+  input[type=text], input[type=date], select{
+    background:var(--card2); border:1px solid var(--line); color:var(--txt);
+    border-radius:10px; padding:9px 10px; font-size:15px; width:100%; min-width:0}
+  .btn{background:var(--accent); color:#fff; border:none; border-radius:10px;
+    padding:10px 14px; font-size:15px; font-weight:600; cursor:pointer}
+  .btn.ghost{background:var(--card2); color:var(--txt); border:1px solid var(--line); font-weight:400}
+
+  /* timeline */
+  .slot{display:flex; align-items:center; gap:8px; padding:5px 8px 5px 10px;
+    border-left:3px solid transparent; border-bottom:1px solid var(--line); background:var(--card)}
+  .slot:first-child{border-radius:14px 14px 0 0}
+  .slot:last-child{border-radius:0 0 14px 14px; border-bottom:none}
+  .timeline{border:1px solid var(--line); border-radius:14px; overflow:hidden}
+  .stime{font-size:12px; color:var(--muted); width:40px; flex:none; font-variant-numeric:tabular-nums}
+  .slot input{background:none; border:none; color:var(--txt); font-size:14px; flex:1;
+    padding:8px 4px; min-width:0; outline:none}
+  .slot input::placeholder{color:#4a5060}
+  .slot select{width:44px; flex:none; background:var(--card2); border:1px solid var(--line);
+    color:var(--txt); border-radius:8px; padding:5px 2px; font-size:14px; text-align:center;
+    appearance:none; -webkit-appearance:none}
+  .slot.now{background:#1c2436; border-left-color:var(--accent)}
+  .slot.now .stime{color:var(--accent); font-weight:700}
+
+  footer{display:flex; gap:8px; justify-content:center; margin-top:24px; flex-wrap:wrap}
+  footer button{font-size:13px}
+  .rwin{display:flex; gap:6px; align-items:center; justify-content:center; margin-top:10px;
+    font-size:13px; color:var(--muted)}
+  .rwin select{width:auto; padding:5px 8px; font-size:13px}
+  .note{font-size:12px; color:var(--muted); text-align:center; margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>Focus <span>30</span></h1>
+    <div class="datenav">
+      <button id="prev">‹</button>
+      <div>
+        <div class="dlabel" id="dlabel"></div>
+        <button class="today" id="btnToday" style="display:none">↩ aujourd'hui</button>
+      </div>
+      <button id="next">›</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <h2>Récap du jour</h2>
+  <div class="card" id="recap"></div>
+
+  <h2>Objectifs</h2>
+  <div class="card">
+    <div id="goals"></div>
+    <div id="goalsEmpty" class="empty" style="display:none">Aucun objectif — fixe-toi un cap 🎯</div>
+    <div class="addgoal">
+      <input type="text" id="gTitle" placeholder="Nouvel objectif (ex : 5K€/mois, -6kg…)">
+      <div class="row">
+        <select id="gDur">
+          <option value="1">1 mois</option>
+          <option value="3" selected>3 mois</option>
+          <option value="6">6 mois</option>
+          <option value="c">Date précise…</option>
+        </select>
+        <input type="date" id="gDate" style="display:none">
+        <button class="btn" id="gAdd">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <h2>Journée · 48 × 30 min</h2>
+  <div class="timeline" id="timeline"></div>
+
+  <footer>
+    <button class="btn ghost" id="btnNotif">🔔 Rappels : off</button>
+    <button class="btn ghost" id="btnExport">⬇︎ Export</button>
+    <button class="btn ghost" id="btnImport">⬆︎ Import</button>
+    <input type="file" id="fileImport" accept=".json" style="display:none">
+  </footer>
+  <div class="rwin">Rappels de <select id="rStart"></select> à <select id="rEnd"></select></div>
+  <p class="note">Données stockées sur cet appareil. Pense à exporter de temps en temps.</p>
+</div>
+
+<script>
+const CATS = [
+  {id:'travail',  emo:'💼', label:'Travail',        color:'#4f8cff'},
+  {id:'sport',    emo:'🏋️', label:'Sport',          color:'#3ddc84'},
+  {id:'nutrition',emo:'🍎', label:'Nutrition',      color:'#ffb347'},
+  {id:'sommeil',  emo:'😴', label:'Sommeil',        color:'#a78bfa'},
+  {id:'perso',    emo:'🏠', label:'Perso',          color:'#64d2ff'},
+  {id:'perte',    emo:'⏳', label:'Perte de temps', color:'#ff5c5c'},
+];
+const catById = id => CATS.find(c=>c.id===id);
+const $ = s => document.querySelector(s);
+
+function load(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v }catch(e){ return d } }
+let days  = load('f30.days', {});
+let goals = load('f30.goals', []);
+let notifOn = load('f30.notif', false);
+const saveDays  = () => localStorage.setItem('f30.days', JSON.stringify(days));
+const saveGoals = () => localStorage.setItem('f30.goals', JSON.stringify(goals));
+
+const dstr = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const todayStr = () => dstr(new Date());
+let cur = todayStr();
+
+const slotTime = i => String(Math.floor(i/2)).padStart(2,'0')+':'+(i%2?'30':'00');
+const nowIdx = () => { const d=new Date(); return d.getHours()*2 + (d.getMinutes()>=30?1:0) };
+
+/* ---------- date nav ---------- */
+function shiftDay(n){
+  const [y,m,d] = cur.split('-').map(Number);
+  const dt = new Date(y, m-1, d+n);
+  cur = dstr(dt);
+  renderAll();
+}
+$('#prev').onclick = () => shiftDay(-1);
+$('#next').onclick = () => shiftDay(1);
+$('#btnToday').onclick = () => { cur = todayStr(); renderAll(); };
+
+function renderDateLabel(){
+  const [y,m,d] = cur.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const isToday = cur === todayStr();
+  $('#dlabel').textContent = isToday ? "Aujourd'hui"
+    : dt.toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'});
+  $('#btnToday').style.display = isToday ? 'none' : 'block';
+}
+
+/* ---------- timeline ---------- */
+function styleRow(i){
+  const row = document.querySelector('.slot[data-i="'+i+'"]');
+  if(!row) return;
+  const e = (days[cur]||{})[i];
+  const c = e && e.c ? catById(e.c) : null;
+  row.style.borderLeftColor = c ? c.color : (row.classList.contains('now') ? 'var(--accent)' : 'transparent');
+}
+function onEdit(i, field, val){
+  const day = days[cur] || (days[cur]={});
+  const e = day[i] || (day[i]={});
+  e[field] = val;
+  if(!(e.t||'').trim() && !e.c){ delete day[i]; }
+  if(!Object.keys(day).length) delete days[cur];
+  saveDays(); styleRow(i); renderRecap();
+}
+function renderTimeline(){
+  const tl = $('#timeline');
+  tl.innerHTML = '';
+  const day = days[cur] || {};
+  const ni = nowIdx(), isToday = cur === todayStr();
+  for(let i=0; i<48; i++){
+    const e = day[i] || {};
+    const row = document.createElement('div');
+    row.className = 'slot' + (isToday && i===ni ? ' now' : '');
+    row.dataset.i = i;
+
+    const t = document.createElement('span');
+    t.className = 'stime'; t.textContent = slotTime(i);
+
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.placeholder = "Qu'as-tu fait ?"; inp.value = e.t || '';
+    inp.addEventListener('input', ev => onEdit(i, 't', ev.target.value));
+
+    const sel = document.createElement('select');
+    sel.innerHTML = '<option value="">·</option>' +
+      CATS.map(c=>`<option value="${c.id}" ${e.c===c.id?'selected':''}>${c.emo}</option>`).join('');
+    sel.addEventListener('change', ev => onEdit(i, 'c', ev.target.value));
+
+    row.append(t, inp, sel);
+    tl.appendChild(row);
+    styleRow(i);
+  }
+  if(isToday){
+    const now = tl.querySelector('.slot.now');
+    if(now) setTimeout(()=>now.scrollIntoView({block:'center'}), 100);
+  }
+}
+
+/* ---------- recap ---------- */
+function renderRecap(){
+  const day = days[cur] || {};
+  const entries = Object.keys(day).map(Number).sort((a,b)=>a-b)
+    .filter(i => (day[i].t||'').trim() || day[i].c);
+  const filled = entries.length;
+  const pct = Math.round(filled/48*100);
+
+  // hours per category
+  const hours = {};
+  entries.forEach(i => { const c = day[i].c; if(c) hours[c] = (hours[c]||0) + 0.5; });
+  const chips = CATS.filter(c=>hours[c.id])
+    .map(c=>`<span class="chip" style="border-color:${c.color}55">${c.emo} ${c.label} · <b style="color:${c.color}">${hours[c.id]}h</b></span>`)
+    .join('');
+
+  // merge consecutive identical entries
+  const groups = [];
+  entries.forEach(i => {
+    const e = day[i];
+    const last = groups[groups.length-1];
+    if(last && last.end === i && last.t === (e.t||'').trim() && last.c === (e.c||'')){
+      last.end = i+1;
+    } else {
+      groups.push({start:i, end:i+1, t:(e.t||'').trim(), c:e.c||''});
+    }
+  });
+  const list = groups.map(g => {
+    const c = g.c ? catById(g.c) : null;
+    return `<div class="ritem"><span class="rtime">${slotTime(g.start)}–${g.end===48?'24:00':slotTime(g.end)}</span>`+
+      (c?`<span style="color:${c.color}">${c.emo}</span>`:'')+
+      `<span>${g.t ? escapeHtml(g.t) : (c?c.label:'')}</span></div>`;
+  }).join('');
+
+  $('#recap').innerHTML =
+    `<div class="barlabel"><b style="color:var(--txt)">${filled}/48</b> créneaux remplis · ${pct}% de la journée</div>`+
+    `<div class="bigbar"><div style="width:${pct}%"></div></div>`+
+    (chips?`<div class="chips">${chips}</div>`:'')+
+    (list?`<div class="rlist">${list}</div>`:`<div class="empty">Rien noté pour l'instant — remplis tes créneaux ⬇️</div>`);
+}
+function escapeHtml(s){ return s.replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])) }
+
+/* ---------- goals ---------- */
+$('#gDur').addEventListener('change', e => {
+  $('#gDate').style.display = e.target.value==='c' ? 'block' : 'none';
+});
+$('#gAdd').onclick = () => {
+  const title = $('#gTitle').value.trim();
+  if(!title) { $('#gTitle').focus(); return; }
+  let deadline;
+  if($('#gDur').value === 'c'){
+    if(!$('#gDate').value) { $('#gDate').focus(); return; }
+    deadline = $('#gDate').value;
+  } else {
+    const d = new Date();
+    d.setMonth(d.getMonth() + Number($('#gDur').value));
+    deadline = dstr(d);
+  }
+  goals.push({ id: Date.now(), title, created: todayStr(), deadline, progress: 0 });
+  saveGoals();
+  $('#gTitle').value = '';
+  renderGoals();
+};
+function renderGoals(){
+  const box = $('#goals');
+  $('#goalsEmpty').style.display = goals.length ? 'none' : 'block';
+  box.innerHTML = '';
+  goals.forEach(g => {
+    const now = Date.now();
+    const start = new Date(g.created+'T00:00').getTime();
+    const end   = new Date(g.deadline+'T23:59').getTime();
+    const daysLeft = Math.max(0, Math.ceil((end-now)/86400000));
+    const timePct = end>start ? Math.min(100, Math.max(0, Math.round((now-start)/(end-start)*100))) : 100;
+    const el = document.createElement('div');
+    el.className = 'goal';
+    el.innerHTML =
+      `<div class="gtop"><span class="gtitle">🎯 ${escapeHtml(g.title)}</span>`+
+      `<button class="gdel" title="Supprimer">✕</button></div>`+
+      `<div class="gmeta">J-${daysLeft} · échéance ${new Date(g.deadline+'T00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})} · ${timePct}% du temps écoulé</div>`+
+      `<div class="gbar"><div style="width:${g.progress}%"></div></div>`+
+      `<input type="range" min="0" max="100" value="${g.progress}">`+
+      `<div class="gpct">${g.progress}% accompli</div>`;
+    const range = el.querySelector('input[type=range]');
+    range.addEventListener('input', ev => {
+      g.progress = Number(ev.target.value);
+      el.querySelector('.gbar div').style.width = g.progress+'%';
+      el.querySelector('.gpct').textContent = g.progress+'% accompli';
+    });
+    range.addEventListener('change', saveGoals);
+    el.querySelector('.gdel').onclick = () => {
+      if(confirm('Supprimer cet objectif ?')){
+        goals = goals.filter(x=>x.id!==g.id); saveGoals(); renderGoals();
+      }
+    };
+    box.appendChild(el);
+  });
+}
+
+/* ---------- rappels push ---------- */
+const VAPID_PUBLIC = 'BIek7zwzWSu7EETwgnp5jfgDEcXlnUNaP5MtKKvajK9Yilz2FGVKUdfKQxi12-B7xocMcW8qlRWGaAyW_LKd4lA';
+let rwin = load('f30.rwin', [7, 23.5]);
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+function urlB64(s){
+  const pad = '='.repeat((4 - s.length % 4) % 4);
+  const raw = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function fillWinSelects(){
+  ['rStart','rEnd'].forEach((id, idx) => {
+    const sel = $('#'+id);
+    sel.innerHTML = Array.from({length:48}, (_,i) =>
+      `<option value="${i/2}" ${i/2===rwin[idx]?'selected':''}>${slotTime(i)}</option>`).join('');
+    sel.addEventListener('change', async () => {
+      rwin[idx] = Number(sel.value);
+      localStorage.setItem('f30.rwin', JSON.stringify(rwin));
+      if(notifOn){ try{ await pushSubscribe(); }catch(e){} }
+    });
+  });
+}
+
+async function pushSubscribe(){
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64(VAPID_PUBLIC) });
+  const r = await fetch('/api/push', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ subscription: sub.toJSON(), start: rwin[0], end: rwin[1] }) });
+  if(!r.ok) throw new Error('enregistrement serveur impossible');
+  return sub;
+}
+
+function renderNotifBtn(){
+  $('#btnNotif').textContent = '🔔 Rappels : ' + (notifOn ? 'on' : 'off');
+}
+
+$('#btnNotif').onclick = async () => {
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    alert(isIOS && !standalone
+      ? "Sur iPhone : ajoute d'abord Focus 30 à l'écran d'accueil (Partager → « Sur l'écran d'accueil »), puis ouvre l'app depuis son icône et active les rappels."
+      : 'Notifications push non supportées sur ce navigateur.');
+    return;
+  }
+  try{
+    if(notifOn){
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if(sub){
+        fetch('/api/push', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ unsubscribe: sub.endpoint }) }).catch(()=>{});
+        await sub.unsubscribe();
+      }
+      notifOn = false;
+    } else {
+      const p = await Notification.requestPermission();
+      if(p !== 'granted'){ alert('Autorise les notifications pour activer les rappels.'); return; }
+      await pushSubscribe();
+      notifOn = true;
+    }
+  }catch(e){
+    alert("Impossible d'activer les rappels : " + e.message);
+    return;
+  }
+  localStorage.setItem('f30.notif', JSON.stringify(notifOn));
+  renderNotifBtn();
+};
+
+/* ---------- export / import ---------- */
+$('#btnExport').onclick = () => {
+  const blob = new Blob([JSON.stringify({days, goals}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'focus30-' + todayStr() + '.json';
+  a.click();
+};
+$('#btnImport').onclick = () => $('#fileImport').click();
+$('#fileImport').addEventListener('change', ev => {
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const data = JSON.parse(r.result);
+      if(data.days) days = data.days;
+      if(data.goals) goals = data.goals;
+      saveDays(); saveGoals(); renderAll();
+      alert('Données importées ✅');
+    }catch(e){ alert('Fichier invalide.'); }
+  };
+  r.readAsText(f);
+  ev.target.value = '';
+});
+
+/* ---------- boot ---------- */
+function renderAll(){ renderDateLabel(); renderRecap(); renderGoals(); renderTimeline(); }
+renderAll();
+fillWinSelects();
+renderNotifBtn();
+// refresh highlighted "now" slot every minute
+setInterval(() => {
+  if(cur !== todayStr()) return;
+  const ni = nowIdx();
+  document.querySelectorAll('.slot.now').forEach(el => {
+    if(Number(el.dataset.i)!==ni){ el.classList.remove('now'); styleRow(Number(el.dataset.i)); }
+  });
+  const row = document.querySelector('.slot[data-i="'+ni+'"]');
+  if(row && !row.classList.contains('now')){ row.classList.add('now'); styleRow(ni); }
+}, 60000);
+</script>
+</body>
+</html>

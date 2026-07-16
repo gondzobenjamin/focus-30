@@ -1,0 +1,13 @@
+name: Rappels toutes les 30 min
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Déclencher l'envoi des notifications
+        run: curl -fsS "https://focus-30.vercel.app/api/push?key=${{ secrets.CRON_SECRET }}"
