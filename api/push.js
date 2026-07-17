@@ -7,40 +7,43 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 );
 
-const PREFIX = 'focus30-subs';
+const SUBS = 'focus30-subs';
+const META = 'focus30-meta';
 
-async function loadSubs() {
-  const { blobs } = await list({ prefix: PREFIX });
-  if (!blobs.length) return [];
+async function loadJson(prefix, dflt) {
+  const { blobs } = await list({ prefix });
+  if (!blobs.length) return dflt;
   const latest = blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))[0];
   const r = await fetch(latest.url);
-  return r.ok ? r.json() : [];
+  return r.ok ? r.json() : dflt;
 }
 
-async function saveSubs(subs) {
-  const { blobs } = await list({ prefix: PREFIX });
-  await put(`${PREFIX}.json`, JSON.stringify(subs), { access: 'public', addRandomSuffix: true });
+async function saveJson(prefix, data) {
+  const { blobs } = await list({ prefix });
+  await put(`${prefix}.json`, JSON.stringify(data), { access: 'public', addRandomSuffix: true });
   if (blobs.length) await del(blobs.map(b => b.url));
 }
+
+const fmt = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + (m % 60 ? '30' : '00');
 
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
     const body = req.body || {};
     if (body.subscription && body.subscription.endpoint) {
-      let subs = await loadSubs();
+      let subs = await loadJson(SUBS, []);
       subs = subs.filter(s => s.subscription.endpoint !== body.subscription.endpoint);
       subs.push({
         subscription: body.subscription,
         start: typeof body.start === 'number' ? body.start : 7,
         end: typeof body.end === 'number' ? body.end : 23.5
       });
-      await saveSubs(subs);
+      await saveJson(SUBS, subs);
       return res.json({ ok: true, count: subs.length });
     }
     if (body.unsubscribe) {
-      let subs = await loadSubs();
+      let subs = await loadJson(SUBS, []);
       subs = subs.filter(s => s.subscription.endpoint !== body.unsubscribe);
-      await saveSubs(subs);
+      await saveJson(SUBS, subs);
       return res.json({ ok: true, count: subs.length });
     }
     return res.status(400).json({ error: 'bad request' });
@@ -50,9 +53,22 @@ module.exports = async (req, res) => {
     if (req.query.key !== process.env.CRON_SECRET) {
       return res.status(401).json({ error: 'unauthorized' });
     }
-    const subs = await loadSubs();
+
+    // demi-heure courante, heure de Paris
     const paris = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const h = paris.getHours() + (paris.getMinutes() >= 30 ? 0.5 : 0);
+    const bmod = paris.getHours() * 60 + (paris.getMinutes() >= 30 ? 30 : 0); // frontière écoulée (min du jour)
+    const h = bmod / 60;
+    const key = `${paris.getFullYear()}-${paris.getMonth() + 1}-${paris.getDate()} ${fmt(bmod)}`;
+    const blockStart = fmt((bmod - 30 + 1440) % 1440);
+    const blockEnd = bmod === 0 ? '00:00' : fmt(bmod);
+
+    // déduplication : un seul envoi par demi-heure, même si le cron appelle plusieurs fois
+    const meta = await loadJson(META, {});
+    if (meta.lastKey === key) {
+      return res.json({ ok: true, dedup: true, key });
+    }
+
+    const subs = await loadJson(SUBS, []);
     let sent = 0, removed = 0;
     const keep = [];
     for (const s of subs) {
@@ -60,8 +76,8 @@ module.exports = async (req, res) => {
       if (!inWindow) { keep.push(s); continue; }
       try {
         await webpush.sendNotification(s.subscription, JSON.stringify({
-          title: 'Focus 30',
-          body: 'Note ta dernière demi-heure ✍️'
+          title: `Focus 30 · ${blockStart} → ${blockEnd}`,
+          body: `Qu'as-tu fait de ${blockStart} à ${blockEnd} ? ✍️`
         }));
         sent++;
         keep.push(s);
@@ -70,8 +86,9 @@ module.exports = async (req, res) => {
         else keep.push(s);
       }
     }
-    if (removed) await saveSubs(keep);
-    return res.json({ ok: true, total: subs.length, sent, removed, hourParis: h });
+    if (removed) await saveJson(SUBS, keep);
+    await saveJson(META, { lastKey: key });
+    return res.json({ ok: true, total: subs.length, sent, removed, key, block: `${blockStart}–${blockEnd}` });
   }
 
   return res.status(405).end();

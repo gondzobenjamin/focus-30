@@ -1,13 +1,28 @@
 name: Rappels toutes les 30 min
 
+# GitHub exécute les crons avec du retard (3 à 15 min) et en saute parfois.
+# Parade : on démarre en avance (:05, :20, :35, :50), on dort jusqu'à la
+# demi-heure pile, puis on appelle l'API. Chaque demi-heure a ainsi deux
+# tentatives ; le serveur déduplique (un seul envoi par demi-heure).
+
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "5,20,35,50 * * * *"
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
-      - name: Déclencher l'envoi des notifications
-        run: curl -fsS "https://focus-30.vercel.app/api/push?key=${{ secrets.CRON_SECRET }}"
+      - name: Envoyer pile à la demi-heure
+        run: |
+          SINCE=$(( $(date +%s) % 1800 ))
+          # démarrage juste après une demi-heure (retard GitHub) : rattrapage immédiat
+          if [ $SINCE -lt 300 ]; then
+            curl -fsS "https://focus-30.vercel.app/api/push?key=${{ secrets.CRON_SECRET }}" || true
+            echo
+          fi
+          echo "Attente de $(( 1800 - SINCE ))s jusqu'à la prochaine demi-heure…"
+          sleep $(( 1800 - SINCE ))
+          curl -fsS "https://focus-30.vercel.app/api/push?key=${{ secrets.CRON_SECRET }}"

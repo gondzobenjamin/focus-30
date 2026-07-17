@@ -82,7 +82,7 @@
   .slot:first-child{border-radius:14px 14px 0 0}
   .slot:last-child{border-radius:0 0 14px 14px; border-bottom:none}
   .timeline{border:1px solid var(--line); border-radius:14px; overflow:hidden}
-  .stime{font-size:12px; color:var(--muted); width:40px; flex:none; font-variant-numeric:tabular-nums}
+  .stime{font-size:11.5px; color:var(--muted); width:78px; flex:none; font-variant-numeric:tabular-nums}
   .slot input{background:none; border:none; color:var(--txt); font-size:14px; flex:1;
     padding:8px 4px; min-width:0; outline:none}
   .slot input::placeholder{color:#4a5060}
@@ -175,6 +175,7 @@ const todayStr = () => dstr(new Date());
 let cur = todayStr();
 
 const slotTime = i => String(Math.floor(i/2)).padStart(2,'0')+':'+(i%2?'30':'00');
+const slotRange = i => slotTime(i)+'–'+(i===47?'24:00':slotTime(i+1));
 const nowIdx = () => { const d=new Date(); return d.getHours()*2 + (d.getMinutes()>=30?1:0) };
 
 /* ---------- date nav ---------- */
@@ -225,7 +226,7 @@ function renderTimeline(){
     row.dataset.i = i;
 
     const t = document.createElement('span');
-    t.className = 'stime'; t.textContent = slotTime(i);
+    t.className = 'stime'; t.textContent = slotRange(i);
 
     const inp = document.createElement('input');
     inp.type = 'text'; inp.placeholder = "Qu'as-tu fait ?"; inp.value = e.t || '';
